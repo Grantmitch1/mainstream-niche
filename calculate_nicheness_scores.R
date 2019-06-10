@@ -1,5 +1,5 @@
 ## Read in data ----
-d <- read.csv("data/Reduced_CMP_Mainstream_Niche.csv")
+d <- read.csv("data/Reduced_CMP_Mainstream_Niche.csv", stringsAsFactors = FALSE)
 
 # clean up some column names to make them easier to type and understand
 colnames(d)[6] <- "Vote.Pct"
@@ -20,11 +20,19 @@ sapply(d, class)
 # just check range
 range(lubridate::dmy(d$Date)) # 1991-03-17 to 2017-10-15
 
-# check levels
-length(levels(d$Country.Name)) # 13 different countries
-levels(d$Country.Name)
-length(levels(d$Date)) # 89 different dates
+# check number of values
+length(unique(d$Country.Name)) # 13 different countries
+unique(d$Country.Name)
+length(unique(d$Date)) # 89 different dates
 length(unique(d$Party.Name)) # 204 different parties
+
+# some weird characters in party name
+d[grepl("â€™", d$Party.Name), ][1:10, ]
+sum(grepl("â€™", d$Party.Name)) # affects 89 records
+table(d$Party.Name[grepl("â€™", d$Party.Name)]) # all should be replaced with apostrophe '
+
+# could replace them in the strings with this line, but won't:
+# d$Party.Name <- gsub("â€™", "'", d$Party.Name)
 
 
 ## Nicheness Scores ----
