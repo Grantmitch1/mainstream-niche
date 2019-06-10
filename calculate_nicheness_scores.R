@@ -1,23 +1,19 @@
 ## Read in data ----
 d <- read.csv("data/Reduced_CMP_Mainstream_Niche.csv")
-head(d)
 
-
-## Brief EDA and cleaning ----
 # clean up some column names to make them easier to type and understand
 colnames(d)[6] <- "Vote.Pct"
 colnames(d)[8] <- "Dimension.Emphasis"
 head(d)
 
+
+## Brief EDA and cleaning ----
 # check missings
 sapply(d, function(col) sum(is.na(col))) # Total.Per.Codes has 6 missing data points
 d[is.na(d$Total.Per.Codes), ] # this is fine, not used in main calcs
 
 # check types
 sapply(d, class)
-
-factor_cols <- sapply(d, is.factor)
-names(factor_cols)[factor_cols]
 
 # could change date to be actual date type, but won't:
 # d$Date <- lubridate::dmy(d$Date)
@@ -41,11 +37,13 @@ nicheness_scores <- function(vote_pct, dim_emph) {
   raw <- sapply(is, function(i) { # calculate raw nicheness score
     dim_by_vote <- (dim_emph * vote_pct)[-i]
     total_vote <- sum(vote_pct[-i])
-    sqrt((dim_emph[i] - (sum(dim_by_vote) / total_vote)) ^ 2)
+    sqrt((dim_emph[i] - sum(dim_by_vote) / total_vote) ^ 2)
   })
   
   mean <- sapply(is, function(i) { # calculate mean nicheness score
-    (sum((raw * vote_pct)[-i])) / sum(vote_pct[-i])
+    raw_by_vote <- (raw * vote_pct)[-i]
+    total_vote <- sum(vote_pct[-i])
+    sum(raw_by_vote) / total_vote
   })
   
   standardised <- raw - mean # calculate standardised nicheness score
@@ -74,13 +72,19 @@ d1994 <- d[d$Date == "18/09/1994", ]
 cbind(d1994, data.frame(nicheness_scores(d1994$Vote.Pct, d1994$Dimension.Emphasis)))
 
 # apply across all election periods
-# this step assumes "Date", "Vote.Pct", and "Dimension.Emphasis" are on the data.frame, d
-res <- do.call("rbind", c(by(d, d$Date, function(d_date) {
+# this step assumes "CMP.Row", "Date", "Vote.Pct", and "Dimension.Emphasis" are on the data.frame, d
+ns <- do.call("rbind", c(by(d, d$Date, function(d_date) {
   cbind(
-    d_date,
+    CMP.Row = d_date$CMP.Row,
     data.frame(nicheness_scores(d_date$Vote.Pct, d_date$Dimension.Emphasis))
   )
 }), make.row.names = FALSE)) # don't have rbind add row names
+
+# by sorts the data by the levels of the factor column Date, resort using unique row id
+res <- merge(d, ns, by = "CMP.Row")
+
+# note: CMP.Row is unique so this is fine
+length(unique(d$CMP.Row)) == nrow(d)
 
 head(res)
 View(res)
