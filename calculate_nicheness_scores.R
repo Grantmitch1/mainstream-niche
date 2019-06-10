@@ -73,15 +73,15 @@ cbind(d1994, data.frame(nicheness_scores(d1994$Vote.Pct, d1994$Dimension.Emphasi
 
 # apply across all election periods
 # this step assumes "CMP.Row", "Date", "Vote.Pct", and "Dimension.Emphasis" are on the data.frame, d
-ns <- do.call("rbind", c(by(d, d$Date, function(d_date) {
+res <- do.call("rbind", c(by(d, d$Date, function(d_date) {
   cbind(
-    CMP.Row = d_date$CMP.Row,
+    d_date,
     data.frame(nicheness_scores(d_date$Vote.Pct, d_date$Dimension.Emphasis))
   )
 }), make.row.names = FALSE)) # don't have rbind add row names
 
 # by sorts the data by the levels of the factor column Date, resort using unique row id
-res <- merge(d, ns, by = "CMP.Row")
+res <- res[match(d$CMP.Row, res$CMP.Row), ]
 
 # note: CMP.Row is unique so this is fine
 length(unique(d$CMP.Row)) == nrow(d)
